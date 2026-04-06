@@ -63,12 +63,8 @@ case 5:r=v,g=p,b=q;break
 return [r,g,b]
 }
 
-function adjustHSV(rgb,hShift,sMult,vMult){
-let hsv=rgbToHsv(rgb[0],rgb[1],rgb[2])
-let h=(hsv[0]+hShift)%1
-let s=Math.min(1,Math.max(0,hsv[1]*sMult))
-let v=Math.min(1,Math.max(0,hsv[2]*vMult))
-return hsvToRgb(h,s,v)
+function clamp(x,min,max){
+return Math.min(max,Math.max(min,x))
 }
 
 function setColor(id,color){
@@ -77,19 +73,37 @@ el.textContent=color
 el.style.background=color
 }
 
+// --- COLOR THEORY LOGIC ---
 function generate(){
 let hex=document.getElementById("colorInput").value
 if(!hex.startsWith("#")) hex="#"+hex
-let base=hexToRgb(hex)
 
-let highlight=adjustHSV(base,0.02,0.85,1.25)
-let shadow=adjustHSV(base,-0.02,1.2,0.7)
-let outline=adjustHSV(shadow,-0.01,1.2,0.6)
+let baseRGB=hexToRgb(hex)
+let [h,s,v]=rgbToHsv(...baseRGB)
 
-setColor("base",rgbToHex(base))
-setColor("highlight",rgbToHex(highlight))
-setColor("shadow",rgbToHex(shadow))
-setColor("outline",rgbToHex(outline))
+// Analogous (+30°)
+let highlightH = (h + 0.08) % 1
+let highlightS = clamp(s * 0.8, 0, 1)
+let highlightV = clamp(v * 1.2, 0, 1)
+
+// Complementary (+180°)
+let shadowH = (h + 0.5) % 1
+let shadowS = clamp(s * 1.1, 0, 1)
+let shadowV = clamp(v * 0.6, 0, 1)
+
+// Outline = deeper complementary
+let outlineH = shadowH
+let outlineS = clamp(shadowS * 1.2, 0, 1)
+let outlineV = clamp(shadowV * 0.7, 0, 1)
+
+let highlight = hsvToRgb(highlightH, highlightS, highlightV)
+let shadow = hsvToRgb(shadowH, shadowS, shadowV)
+let outline = hsvToRgb(outlineH, outlineS, outlineV)
+
+setColor("base", rgbToHex(baseRGB))
+setColor("highlight", rgbToHex(highlight))
+setColor("shadow", rgbToHex(shadow))
+setColor("outline", rgbToHex(outline))
 }
 
 function copy(id){
