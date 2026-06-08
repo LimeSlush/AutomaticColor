@@ -5,113 +5,136 @@
 <input id="colorInput" value="#F71833" oninput="generate()">
 
 <div>
-<div>Base <span id="base"></span> <button onclick="copy('base')">Copy</button></div>
-<div>Highlight <span id="highlight"></span> <button onclick="copy('highlight')">Copy</button></div>
-<div>Shadow <span id="shadow"></span> <button onclick="copy('shadow')">Copy</button></div>
-<div>Outline <span id="outline"></span> <button onclick="copy('outline')">Copy</button></div>
+    <div>Base <span id="base"></span> <button onclick="copy('base')">Copy</button></div>
+    <div>Highlight <span id="highlight"></span> <button onclick="copy('highlight')">Copy</button></div>
+    <div>Shadow <span id="shadow"></span> <button onclick="copy('shadow')">Copy</button></div>
+    <div>Outline <span id="outline"></span> <button onclick="copy('outline')">Copy</button></div>
 </div>
 
 <script>
-function hexToRgb(hex){
-hex=hex.replace("#","")
-return [
-parseInt(hex.substring(0,2),16)/255,
-parseInt(hex.substring(2,4),16)/255,
-parseInt(hex.substring(4,6),16)/255
-]
+function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    return [
+        parseInt(hex.substring(0, 2), 16) / 255,
+        parseInt(hex.substring(2, 4), 16) / 255,
+        parseInt(hex.substring(4, 6), 16) / 255
+    ];
 }
 
-function rgbToHex(rgb){
-return "#"+
-Math.round(rgb[0]*255).toString(16).padStart(2,"0").toUpperCase()+
-Math.round(rgb[1]*255).toString(16).padStart(2,"0").toUpperCase()+
-Math.round(rgb[2]*255).toString(16).padStart(2,"0").toUpperCase()
+function rgbToHex(rgb) {
+    return "#" +
+        Math.round(rgb[0] * 255).toString(16).padStart(2, "0").toUpperCase() +
+        Math.round(rgb[1] * 255).toString(16).padStart(2, "0").toUpperCase() +
+        Math.round(rgb[2] * 255).toString(16).padStart(2, "0").toUpperCase();
 }
 
-function rgbToHsv(r,g,b){
-let max=Math.max(r,g,b),min=Math.min(r,g,b)
-let h,s,v=max
-let d=max-min
-s=max===0?0:d/max
-if(max===min) h=0
-else{
-switch(max){
-case r:h=(g-b)/d+(g<b?6:0);break
-case g:h=(b-r)/d+2;break
-case b:h=(r-g)/d+4;break
-}
-h/=6
-}
-return [h,s,v]
-}
+function rgbToHsv(r, g, b) {
+    let max = Math.max(r, g, b);
+    let min = Math.min(r, g, b);
+    let h, s, v = max;
 
-function hsvToRgb(h,s,v){
-let r,g,b
-let i=Math.floor(h*6)
-let f=h*6-i
-let p=v*(1-s)
-let q=v*(1-f*s)
-let t=v*(1-(1-f)*s)
-switch(i%6){
-case 0:r=v,g=t,b=p;break
-case 1:r=q,g=v,b=p;break
-case 2:r=p,g=v,b=t;break
-case 3:r=p,g=q,b=v;break
-case 4:r=t,g=p,b=v;break
-case 5:r=v,g=p,b=q;break
-}
-return [r,g,b]
+    let d = max - min;
+    s = max === 0 ? 0 : d / max;
+
+    if (max === min) {
+        h = 0;
+    } else {
+        switch (max) {
+            case r:
+                h = (g - b) / d + (g < b ? 6 : 0);
+                break;
+            case g:
+                h = (b - r) / d + 2;
+                break;
+            case b:
+                h = (r - g) / d + 4;
+                break;
+        }
+        h /= 6;
+    }
+
+    return [h, s, v];
 }
 
-function clamp(x,min,max){
-return Math.min(max,Math.max(min,x))
+function hsvToRgb(h, s, v) {
+    let r, g, b;
+
+    let i = Math.floor(h * 6);
+    let f = h * 6 - i;
+
+    let p = v * (1 - s);
+    let q = v * (1 - f * s);
+    let t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+    }
+
+    return [r, g, b];
 }
 
-function setColor(id,color){
-let el=document.getElementById(id)
-el.textContent=color
-el.style.background=color
+function clamp(x, min, max) {
+    return Math.min(max, Math.max(min, x));
 }
 
-// --- COLOR THEORY LOGIC ---
-function generate(){
-let hex=document.getElementById("colorInput").value
-if(!hex.startsWith("#")) hex="#"+hex
-
-let baseRGB=hexToRgb(hex)
-let [h,s,v]=rgbToHsv(...baseRGB)
-
-// Analogous (+30°)
-let highlightH = (h + 0.08) % 1
-let highlightS = clamp(s * 0.8, 0, 1)
-let highlightV = clamp(v * 1.2, 0, 1)
-
-// Complementary (+180°)
-let shadowH = (h + 0.5) % 1
-let shadowS = clamp(s * 1.1, 0, 1)
-let shadowV = clamp(v * 0.6, 0, 1)
-
-// Outline = deeper complementary
-let outlineH = shadowH
-let outlineS = clamp(shadowS * 1.2, 0, 1)
-let outlineV = clamp(shadowV * 0.7, 0, 1)
-
-let highlight = hsvToRgb(highlightH, highlightS, highlightV)
-let shadow = hsvToRgb(shadowH, shadowS, shadowV)
-let outline = hsvToRgb(outlineH, outlineS, outlineV)
-
-setColor("base", rgbToHex(baseRGB))
-setColor("highlight", rgbToHex(highlight))
-setColor("shadow", rgbToHex(shadow))
-setColor("outline", rgbToHex(outline))
+function setColor(id, color) {
+    let el = document.getElementById(id);
+    el.textContent = color;
+    el.style.background = color;
+    el.style.color = "#fff";
+    el.style.padding = "2px 6px";
+    el.style.display = "inline-block";
 }
 
-function copy(id){
-let text=document.getElementById(id).textContent
-navigator.clipboard.writeText(text)
+function generate() {
+    let hex = document.getElementById("colorInput").value;
+
+    if (!hex.startsWith("#")) {
+        hex = "#" + hex;
+    }
+
+    let baseRGB = hexToRgb(hex);
+    let [h, s, v] = rgbToHsv(...baseRGB);
+
+    // Same hue and saturation.
+    // Only brightness changes. Humanity complicated this enough already.
+
+    let highlight = hsvToRgb(
+        h,
+        s,
+        clamp(v * 1.25, 0, 1)
+    );
+
+    let shadow = hsvToRgb(
+        h,
+        s,
+        clamp(v * 0.75, 0, 1)
+    );
+
+    let outline = hsvToRgb(
+        h,
+        s,
+        clamp(v * 0.45, 0, 1)
+    );
+
+    setColor("base", rgbToHex(baseRGB));
+    setColor("highlight", rgbToHex(highlight));
+    setColor("shadow", rgbToHex(shadow));
+    setColor("outline", rgbToHex(outline));
 }
 
-generate()
+function copy(id) {
+    navigator.clipboard.writeText(
+        document.getElementById(id).textContent
+    );
+}
+
+generate();
 </script>
 
 </body>
